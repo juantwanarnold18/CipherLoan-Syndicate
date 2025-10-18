@@ -10,7 +10,7 @@
 
 **Privacy-Preserving Loan Syndication Platform using Fully Homomorphic Encryption**
 
-[Live Demo](https://cipherloan.vercel.app) • [GitHub Repository](https://github.com/juantwanarnold18/CipherLoan-Syndicate) • [Contract on Etherscan](https://sepolia.etherscan.io/address/0x7eB3E9fA8e0c0827BD15E809E282902C7916cEE7)
+[Live Demo](https://cipherloan-syndicate.vercel.app) • [GitHub Repository](https://github.com/juantwanarnold18/CipherLoan-Syndicate) • [Contract on Etherscan](https://sepolia.etherscan.io/address/0x7eB3E9fA8e0c0827BD15E809E282902C7916cEE7)
 
 </div>
 
