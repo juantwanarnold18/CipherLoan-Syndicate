@@ -297,7 +297,7 @@ function HeroSection() {
                     <Button
                       size="large"
                       icon={<GithubOutlined />}
-                      href="https://github.com/zama-ai/fhevm"
+                      href="https://github.com/juantwanarnold18/CipherLoan-Syndicate"
                       target="_blank"
                       style={{
                         height: 48,
