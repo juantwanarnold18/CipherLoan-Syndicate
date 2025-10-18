@@ -27,7 +27,6 @@
 - [Project Structure](#-project-structure)
 - [Deployment Information](#-deployment-information)
 - [Future Roadmap](#-future-roadmap)
-- [Known Issues & Solutions](#-known-issues--solutions)
 - [Developer Documentation](#-developer-documentation)
 - [License](#-license)
 
@@ -544,51 +543,6 @@ npx hardhat run scripts/deploy.ts --network sepolia
 
 ---
 
-## ⚠️ Known Issues & Solutions
-
-### Issue 1: 15 Deployment Failures (✅ Resolved)
-
-**Problem**: Initial deployments failed with transaction reverts when submitting proposals.
-
-**Root Cause**: Used `TFHE.asEuint64()` to import client-encrypted handles
-```solidity
-// ❌ WRONG
-euint64 collateral = TFHE.asEuint64(abi.decode(encryptedCollateral, (uint256)));
-```
-
-**Solution**: Changed to `FHE.fromExternal()` based on Sealed-Auction reference
-```solidity
-// ✅ CORRECT
-euint64 collateral = FHE.fromExternal(collateralCt, collateralProof);
-```
-
-**Reference**: [FHE_COMPLETE_GUIDE_FULL_CN.md Section 6.6](../FHE_COMPLETE_GUIDE_FULL_CN.md#66-错误-8合约中使用错误的方法导入-fhe-句柄)
-
-### Issue 2: FHE SDK Loading Delays
-
-**Problem**: First-time users experience 3-5 second delay when encrypting data
-
-**Cause**: CDN-loaded SDK needs to download and initialize
-
-**Workaround**: Show loading indicator with clear status message
-```typescript
-setEncryptionStatus('Loading FHE encryption SDK...');
-```
-
-**Future Solution**: Consider self-hosting SDK or implementing service worker caching
-
-### Issue 3: MetaMask Network Switching
-
-**Problem**: Users on wrong network receive confusing errors
-
-**Solution**: Implemented automatic network detection and prompts:
-```typescript
-if (chain?.id !== sepolia.id) {
-  message.warning('Please switch to Sepolia testnet');
-}
-```
-
----
 
 ## 👨‍💻 Developer Documentation
 
