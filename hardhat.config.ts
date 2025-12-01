@@ -1,11 +1,12 @@
 import "@nomicfoundation/hardhat-toolbox";
-import "@fhevm/hardhat-plugin"; // exposes `fhevm` helpers in Hardhat
-import { HardhatUserConfig, vars } from "hardhat/config";
+import "@fhevm/hardhat-plugin";
+import { HardhatUserConfig } from "hardhat/config";
 import type { NetworksUserConfig } from "hardhat/types";
+import "dotenv/config";
 
 // Read secrets from environment variables
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
-const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "0xf99ee7f8ce3455724501172eb82ce9ce909c9c3192acc77d177f1d456f939599";
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 
 const networks: NetworksUserConfig = { hardhat: { chainId: 31337 } };
 
@@ -23,9 +24,13 @@ const config: HardhatUserConfig = {
     settings: {
       evmVersion: "cancun",
       optimizer: { enabled: true, runs: 200 },
+      viaIR: true,
     },
   },
   networks,
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY || "",
+  },
   paths: {
     sources: "./contracts",
     tests: "./test",
