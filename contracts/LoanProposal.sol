@@ -2,12 +2,13 @@
 pragma solidity ^0.8.24;
 
 import { FHE, euint64, euint32, eaddress, ebool, externalEuint64, externalEuint32 } from "@fhevm/solidity/lib/FHE.sol";
-import { SepoliaConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
+import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
 
-/// @title Loan Proposal Contract - Privacy-Preserving Loan Syndication
-/// @notice Borrowers submit encrypted loan proposals with collateral, amount, and credit score
-/// @dev Based on Sealed-Auction pattern - uses FHE.fromExternal for correct handle import
-contract LoanProposal is SepoliaConfig {
+/// @title CipherFi - Privacy-Preserving Encrypted Finance
+/// @notice Borrowers submit encrypted financial proposals with collateral, amount, and credit score
+/// @dev CipherFi uses Zama's FHE for end-to-end encrypted finance on-chain
+/// @dev Updated for FHEVM 0.9.1 - uses ZamaEthereumConfig for dynamic chain resolution
+contract LoanProposal is ZamaEthereumConfig {
     address public owner;
 
     enum ProposalStatus {
