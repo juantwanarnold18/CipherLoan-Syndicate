@@ -1,6 +1,21 @@
-// Type declarations for CDN-loaded modules
-declare module 'https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js' {
-  export function initSDK(): Promise<void>;
-  export function createInstance(config: any): Promise<any>;
-  export const SepoliaConfig: any;
+// Type declarations for Zama Relayer SDK loaded from CDN
+// The SDK is loaded via script tag in index.html and exposed on window object
+
+interface RelayerSDK {
+  initSDK(): Promise<void>;
+  createInstance(config: any): Promise<any>;
+  SepoliaConfig: {
+    network?: any;
+    gatewayUrl?: string;
+    [key: string]: any;
+  };
 }
+
+declare global {
+  interface Window {
+    RelayerSDK?: RelayerSDK;
+    relayerSDK?: RelayerSDK;
+  }
+}
+
+export {};
