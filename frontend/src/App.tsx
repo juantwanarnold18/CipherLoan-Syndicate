@@ -1,7 +1,7 @@
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider, ConnectButton, darkTheme } from '@rainbow-me/rainbowkit';
-import { App as AntApp, ConfigProvider, theme, Card, Typography, Form, InputNumber, Button, Spin, Row, Col, Divider, Badge, Tag } from 'antd';
+import { App as AntApp, ConfigProvider, theme, Card, Typography, Form, InputNumber, Button, Spin, Row, Col, Divider, Badge, Tag, message } from 'antd';
 import { LockOutlined, GithubOutlined, RocketOutlined, SafetyOutlined, ThunderboltOutlined, BlockOutlined, ExperimentOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { config } from './config/wagmi';
 import { useAccount } from 'wagmi';
@@ -9,6 +9,15 @@ import { useState } from 'react';
 import { useFHE } from './hooks/useFHE';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from './config/contracts';
 import { writeContract, waitForTransactionReceipt } from 'wagmi/actions';
+import {
+  toastTxPending,
+  toastTxSuccess,
+  toastTxError,
+  toastUserRejected,
+  toastEncrypting,
+  closeEncryptingToast,
+  isUserRejection,
+} from './utils/toast-utils';
 import '@rainbow-me/rainbowkit/styles.css';
 
 const { Title, Text, Paragraph, Link } = Typography;
@@ -19,7 +28,6 @@ function SubmitProposal() {
   const { isConnected, address } = useAccount();
   const [loading, setLoading] = useState(false);
   const [encryptionStatus, setEncryptionStatus] = useState('');
-  const { message } = AntApp.useApp();
   const { encryptBatch } = useFHE();
 
   const handleSubmit = async (values: any) => {
@@ -29,10 +37,12 @@ function SubmitProposal() {
     }
 
     setLoading(true);
+    let txHash: `0x${string}` | undefined;
 
     try {
       // Step 1: Encrypt sensitive data
       setEncryptionStatus('Encrypting your data with FHE...');
+      toastEncrypting();
       console.log('[Submit] Starting FHE encryption...');
 
       const dataToEncrypt = [
@@ -48,16 +58,16 @@ function SubmitProposal() {
       );
 
       console.log('[Submit] Encryption successful:', { handles, inputProof });
+      closeEncryptingToast();
 
       // Step 2: Generate proposal ID
       const proposalId = `0x${Date.now().toString(16).padStart(64, '0')}`;
 
       // Step 3: Submit to smart contract
-      // ✅ Using externalEuint types - handles are passed as bytes32
       setEncryptionStatus('Submitting to blockchain...');
       console.log('[Submit] Calling smart contract...');
 
-      const hash = await writeContract(config, {
+      txHash = await writeContract(config, {
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: CONTRACT_ABI,
         functionName: 'submitProposal',
@@ -72,30 +82,35 @@ function SubmitProposal() {
         ],
       });
 
-      console.log('[Submit] Transaction submitted:', hash);
+      console.log('[Submit] Transaction submitted:', txHash);
+
+      // Show pending notification with explorer link
+      toastTxPending(txHash, 'Submitting Loan Proposal');
       setEncryptionStatus('Waiting for confirmation...');
 
       // Step 4: Wait for transaction confirmation
-      const receipt = await waitForTransactionReceipt(config, { hash });
+      const receipt = await waitForTransactionReceipt(config, { hash: txHash });
 
       console.log('[Submit] Transaction confirmed:', receipt);
 
       if (receipt.status === 'success') {
-        message.success('Proposal submitted successfully! Transaction: ' + hash.substring(0, 10) + '...');
+        toastTxSuccess(txHash, 'Loan proposal submitted successfully!');
         form.resetFields();
       } else {
-        throw new Error('Transaction failed');
+        throw new Error('Transaction reverted on-chain');
       }
 
     } catch (error: any) {
       console.error('[Submit] Error:', error);
+      closeEncryptingToast();
 
-      if (error.message?.includes('User rejected')) {
-        message.error('Transaction cancelled by user');
-      } else if (error.message?.includes('FHE')) {
-        message.error('FHE encryption failed: ' + error.message);
+      // Handle different error types
+      if (isUserRejection(error)) {
+        toastUserRejected();
+      } else if (error.message?.includes('FHE') || error.message?.includes('encrypt')) {
+        toastTxError(undefined, new Error('FHE encryption failed: ' + (error.shortMessage || error.message)));
       } else {
-        message.error('Failed to submit proposal: ' + (error.message || 'Unknown error'));
+        toastTxError(txHash, error);
       }
     } finally {
       setLoading(false);
@@ -257,7 +272,7 @@ function HeroSection() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <LockOutlined style={{ fontSize: 32, color: '#0052FF' }} />
           <Title level={2} style={{ margin: 0, color: '#fff', fontSize: '24px' }}>
-            CipherLoan Syndicate
+            CipherFi
           </Title>
         </div>
         <ConnectButton />
@@ -271,10 +286,10 @@ function HeroSection() {
               <Badge.Ribbon text="Demo v1.0" color="#0052FF">
                 <div>
                   <Title level={1} style={{ color: '#fff', fontSize: '48px', marginBottom: 20, fontWeight: 700 }}>
-                    Privacy-Preserving Loan Syndication
+                    Privacy-Preserving Encrypted Finance
                   </Title>
                   <Paragraph style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 18, maxWidth: 700, margin: '0 auto 30px' }}>
-                    Submit loan proposals with <Text strong style={{ color: '#0052FF' }}>fully encrypted</Text> financial data.
+                    Submit financial proposals with <Text strong style={{ color: '#0052FF' }}>fully encrypted</Text> data.
                     Your collateral, loan amount, and credit score remain <Text strong style={{ color: '#00D4FF' }}>private on-chain</Text> using
                     Zama's Fully Homomorphic Encryption (FHE) technology.
                   </Paragraph>
@@ -297,7 +312,7 @@ function HeroSection() {
                     <Button
                       size="large"
                       icon={<GithubOutlined />}
-                      href="https://github.com/juantwanarnold18/CipherLoan-Syndicate"
+                      href="https://github.com/cipherfi/cipherfi"
                       target="_blank"
                       style={{
                         height: 48,
@@ -454,7 +469,7 @@ function HeroSection() {
                 <CheckCircleOutlined style={{ color: '#52c41a' }} /> About This Demo
               </Title>
               <Paragraph style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 15, marginBottom: 16 }}>
-                This is a <Text strong style={{ color: '#0052FF' }}>proof-of-concept demonstration</Text> of privacy-preserving loan syndication
+                <Text strong style={{ color: '#0052FF' }}>CipherFi</Text> is a proof-of-concept demonstration of privacy-preserving finance
                 using Fully Homomorphic Encryption. The project showcases how sensitive financial data can be kept encrypted throughout
                 the entire lifecycle on the blockchain.
               </Paragraph>
