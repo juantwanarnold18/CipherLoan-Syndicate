@@ -1,16 +1,17 @@
-# 🔒 CipherLoan Syndicate
+# 🔒 CipherFi
 
 <div align="center">
 
-![Zama FHE](https://img.shields.io/badge/Zama-FHE-0052FF?style=for-the-badge)
+![Zama FHE](https://img.shields.io/badge/Zama-FHEVM_0.9.1-0052FF?style=for-the-badge)
 ![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636?style=for-the-badge&logo=solidity)
-![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript)
+![Tests](https://img.shields.io/badge/Tests-14_Passing-success?style=for-the-badge)
 ![Sepolia](https://img.shields.io/badge/Network-Sepolia-9cf?style=for-the-badge)
 
-**Privacy-Preserving Loan Syndication Platform using Fully Homomorphic Encryption**
+**Privacy-Preserving Encrypted Finance Platform using Fully Homomorphic Encryption**
 
-[Live Demo](https://cipherloan-syndicate.vercel.app) • [GitHub Repository](https://github.com/juantwanarnold18/CipherLoan-Syndicate) • [Contract on Etherscan](https://sepolia.etherscan.io/address/0x7eB3E9fA8e0c0827BD15E809E282902C7916cEE7)
+[Live Demo](https://cipherfi.vercel.app) • [GitHub Repository](https://github.com/cipherfi/cipherfi) • [Contract on Etherscan](https://sepolia.etherscan.io/address/0x764BD0BF5528D31d6e7610362E11288afc7170Ea)
 
 </div>
 
@@ -25,6 +26,7 @@
 - [Smart Contract Deep Dive](#-smart-contract-deep-dive)
 - [Quick Start](#-quick-start)
 - [Project Structure](#-project-structure)
+- [Testing](#-testing)
 - [Deployment Information](#-deployment-information)
 - [Future Roadmap](#-future-roadmap)
 - [Developer Documentation](#-developer-documentation)
@@ -34,7 +36,7 @@
 
 ## 🎯 Project Overview
 
-**CipherLoan Syndicate** is a privacy-preserving loan syndication platform demonstration built with Zama's Fully Homomorphic Encryption (FHE) technology.
+**CipherFi** is a privacy-preserving encrypted finance platform demonstration built with Zama's Fully Homomorphic Encryption (FHE) technology.
 
 ### The Problem
 In traditional on-chain lending systems, borrowers' sensitive financial information (collateral value, credit score, loan amount) is completely transparent, leading to:
@@ -99,7 +101,7 @@ Using Zama's FHE technology to achieve:
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     Ethereum Sepolia Testnet                        │
 │  ┌────────────────────────────────────────────────────────────┐    │
-│  │  LoanProposal.sol (@fhevm/solidity 0.8.0)                  │    │
+│  │  LoanProposal.sol (@fhevm/solidity 0.9.1)                  │    │
 │  │                                                             │    │
 │  │  submitProposal(                                            │    │
 │  │    bytes32 proposalId,                                      │    │
@@ -128,12 +130,14 @@ Using Zama's FHE technology to achieve:
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | **Smart Contract** | Solidity 0.8.24 | Core business logic |
-| **FHE Library** | @fhevm/solidity 0.8.0 | Homomorphic encryption operations |
-| **Frontend Framework** | React 18 + Vite | Modern UI development |
+| **FHE Library** | @fhevm/solidity 0.9.1 | Homomorphic encryption operations |
+| **FHE Config** | ZamaEthereumConfig | Dynamic chain resolution for FHEVM |
+| **Frontend Framework** | React 19 + Vite 7 | Modern UI development |
 | **Wallet Integration** | RainbowKit + wagmi v2 | Web3 wallet connection |
 | **UI Components** | Ant Design 5 | Enterprise-grade UI library |
-| **FHE Client SDK** | @zama-fhe/relayer-sdk 0.2.0 | Client-side encryption |
+| **FHE Client SDK** | @zama-fhe/relayer-sdk 0.3.0-5 | Client-side encryption via CDN |
 | **Network** | Ethereum Sepolia | Testnet deployment |
+| **Testing** | Hardhat + Chai + Mocha | Smart contract unit testing |
 
 ---
 
@@ -236,12 +240,17 @@ Using Zama's FHE technology to achieve:
 
 ### Key Concepts
 
-#### 1. **externalEuint vs euint**
+#### 1. **FHEVM 0.9.1 Migration**
+- **Old Config**: `SepoliaConfig` (hardcoded for Sepolia testnet)
+- **New Config**: `ZamaEthereumConfig` (dynamic chain resolution)
+- **Benefits**: Automatic network detection, works on multiple networks without code changes
+
+#### 2. **externalEuint vs euint**
 - `externalEuint64`: Type for receiving encrypted handles from client (alias for `bytes32`)
 - `euint64`: Internal encrypted type for on-chain storage (alias for `uint256`)
 - Conversion: `euint64 = FHE.fromExternal(externalEuint64, proof)`
 
-#### 2. **FHE.fromExternal() - The Correct Pattern**
+#### 3. **FHE.fromExternal() - The Correct Pattern**
 ```solidity
 // ✅ CORRECT: Import client-encrypted handle
 euint64 value = FHE.fromExternal(encryptedHandle, proof);
@@ -384,7 +393,27 @@ euint64 collateral = FHE.fromExternal(
 // 4. Properly imports handle into contract storage
 ```
 
-#### 4. **Access Control Pattern**
+#### 4. **CDN-Based FHE SDK Loading**
+```html
+<!-- IMPORTANT: Add COOP/COEP headers for WASM support -->
+<meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+<meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+
+<!-- Load Relayer SDK from CDN -->
+<script
+  src="https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.umd.cjs"
+  defer
+  crossorigin="anonymous"
+></script>
+```
+
+Frontend access via global object:
+```typescript
+const sdk = window.RelayerSDK || window.relayerSDK;
+const { initSDK, createInstance, SepoliaConfig } = sdk;
+```
+
+#### 5. **Access Control Pattern**
 ```solidity
 // Allow contract to perform computations on encrypted data
 FHE.allowThis(collateral);     // Contract can use this value
@@ -420,8 +449,8 @@ function evaluateProposal(bytes32 proposalId) external {
 
 #### 1. Clone Repository
 ```bash
-git clone https://github.com/juantwanarnold18/CipherLoan-Syndicate.git
-cd CipherLoan-Syndicate
+git clone https://github.com/cipherfi/cipherfi.git
+cd cipherfi
 ```
 
 #### 2. Install Dependencies
@@ -462,11 +491,13 @@ Visit: http://localhost:5173
 ## 📁 Project Structure
 
 ```
-CipherLoan-Syndicate/
+cipherfi/
 ├── contracts/                    # Smart contracts
 │   └── LoanProposal.sol         # Main FHE contract
 ├── scripts/                      # Deployment scripts
 │   └── deploy.ts                # Hardhat deployment script
+├── test/                         # Unit tests
+│   └── LoanProposal.test.ts     # Contract unit tests
 ├── frontend/                     # Frontend application
 │   ├── src/
 │   │   ├── config/
@@ -475,16 +506,108 @@ CipherLoan-Syndicate/
 │   │   ├── hooks/
 │   │   │   └── useFHE.ts        # FHE encryption hook
 │   │   ├── utils/
-│   │   │   └── fhe.ts           # FHE utility functions
+│   │   │   ├── fhe.ts           # FHE utility functions
+│   │   │   └── toast-utils.tsx  # Transaction toast notifications
 │   │   ├── App.tsx              # Main application component
 │   │   └── main.tsx             # Application entry point
-│   ├── index.html               # HTML template
+│   ├── index.html               # HTML template with COOP/COEP headers
 │   ├── vite.config.ts           # Vite configuration
 │   └── package.json             # Frontend dependencies
 ├── hardhat.config.ts             # Hardhat configuration
 ├── package.json                  # Root dependencies
 ├── tsconfig.json                 # TypeScript configuration
 └── README.md                     # This file
+```
+
+---
+
+## 🧪 Testing
+
+CipherFi includes a comprehensive test suite to ensure contract reliability and security.
+
+### Test Coverage
+
+The test suite covers the following areas:
+
+| Test Category | Description | Test Count |
+|--------------|-------------|------------|
+| **Deployment** | Verifies correct initialization and ownership | 2 tests |
+| **Owner Functions** | Ensures only owner can perform privileged operations | 4 tests |
+| **View Permissions** | Validates access control for encrypted data | 3 tests |
+| **Status Transitions** | Tests proposal lifecycle state management | 4 tests |
+| **Query Functions** | Verifies data retrieval functions | 1 test |
+
+**Total: 14 unit tests** covering all core contract functionality.
+
+### Running Tests
+
+```bash
+# Install dependencies first
+npm install
+
+# Compile contracts
+npm run compile
+
+# Run all tests
+npm test
+```
+
+### Test Output Example
+
+```
+  LoanProposal
+    Deployment
+      ✔ Should set the deployer as owner
+      ✔ Should initialize totalProposals to 0
+    Owner Functions
+      ✔ Should only allow owner to approve proposals
+      ✔ Should only allow owner to reject proposals
+      ✔ Should only allow owner to fund proposals
+      ✔ Should only allow owner to grant view permissions
+    View Permission Checks
+      ✔ Should deny access to encrypted collateral without permission
+      ✔ Should deny access to encrypted requested amount without permission
+      ✔ Should deny access to encrypted credit score without permission
+    Proposal Status Transitions
+      ✔ Should reject approving non-existent proposal
+      ✔ Should reject rejecting non-existent proposal
+      ✔ Should reject funding non-existent proposal
+      ✔ Should reject granting view on non-existent proposal
+    Borrower Proposals Query
+      ✔ Should return empty array for address with no proposals
+
+  14 passing (343ms)
+```
+
+### Test Structure
+
+Tests are located in `test/LoanProposal.test.ts` and use:
+- **Hardhat**: Ethereum development environment
+- **Chai**: Assertion library for test expectations
+- **Mocha**: Test framework for organizing test suites
+- **Ethers v6**: Ethereum library for contract interactions
+
+### Adding New Tests
+
+To add new test cases:
+
+1. Open `test/LoanProposal.test.ts`
+2. Add new test cases within existing `describe` blocks or create new ones
+3. Run tests to verify: `npm test`
+
+Example test template:
+
+```typescript
+it("Should test specific behavior", async function () {
+  // Setup
+  const proposalId = ethers.keccak256(ethers.toUtf8Bytes("test-id"));
+
+  // Execute
+  await loanProposal.connect(borrower).someFunction(proposalId);
+
+  // Assert
+  expect(await loanProposal.someGetter(proposalId)).to.equal(expectedValue);
+});
 ```
 
 ---
@@ -496,12 +619,12 @@ CipherLoan-Syndicate/
 | Item | Information |
 |------|-------------|
 | **Contract Name** | LoanProposal |
-| **Contract Address** | `0x7eB3E9fA8e0c0827BD15E809E282902C7916cEE7` |
+| **Contract Address** | `0x764BD0BF5528D31d6e7610362E11288afc7170Ea` |
 | **Network** | Sepolia Testnet |
 | **Chain ID** | 11155111 |
-| **Deployment Date** | 2025-01-18 |
+| **Deployment Date** | 2025-12-08 |
 
-**Etherscan**: [View Contract](https://sepolia.etherscan.io/address/0x7eB3E9fA8e0c0827BD15E809E282902C7916cEE7)
+**Etherscan**: [View Contract](https://sepolia.etherscan.io/address/0x764BD0BF5528D31d6e7610362E11288afc7170Ea)
 
 ### Deployment Command
 
@@ -556,8 +679,8 @@ npx hardhat run scripts/deploy.ts --network sepolia
 #### Setup
 ```bash
 # Clone repository
-git clone https://github.com/juantwanarnold18/CipherLoan-Syndicate.git
-cd CipherLoan-Syndicate
+git clone https://github.com/cipherfi/cipherfi.git
+cd cipherfi
 
 # Install dependencies
 npm install
@@ -576,8 +699,11 @@ cd frontend && npm run dev
 ### Testing
 
 ```bash
-# Run contract tests
-npx hardhat test
+# Run contract unit tests
+npm test
+
+# Compile contracts
+npm run compile
 
 # Run frontend in dev mode
 cd frontend && npm run dev
@@ -585,6 +711,8 @@ cd frontend && npm run dev
 # Build frontend for production
 cd frontend && npm run build
 ```
+
+See the [Testing](#-testing) section for detailed test coverage and examples.
 
 ### Environment Variables
 
@@ -656,7 +784,7 @@ This is a demonstration project. For production use:
 
 MIT License
 
-Copyright (c) 2025 CipherLoan Syndicate
+Copyright (c) 2025 CipherFi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -684,6 +812,6 @@ SOFTWARE.
 
 ⭐ If this project helps you, please give us a Star!
 
-[GitHub](https://github.com/juantwanarnold18/CipherLoan-Syndicate) • [Report Bug](https://github.com/juantwanarnold18/CipherLoan-Syndicate/issues) • [Request Feature](https://github.com/juantwanarnold18/CipherLoan-Syndicate/issues)
+[GitHub](https://github.com/cipherfi/cipherfi) • [Report Bug](https://github.com/cipherfi/cipherfi/issues) • [Request Feature](https://github.com/cipherfi/cipherfi/issues)
 
 </div>
